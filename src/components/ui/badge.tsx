@@ -11,7 +11,14 @@ const badgeVariants = cva(
         default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
         secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+        outline: "text-foreground border-border",
+        // Status variants
+        success: "border-success/30 bg-success/20 text-success",
+        warning: "border-warning/30 bg-warning/20 text-warning",
+        danger: "border-danger/30 bg-danger/20 text-danger animate-pulse",
+        // Space-themed
+        glow: "border-primary/30 bg-primary/20 text-primary shadow-[0_0_10px_hsl(var(--primary)/0.3)]",
+        orbital: "border-primary/50 bg-gradient-to-r from-primary/20 to-primary/10 text-primary font-mono",
       },
     },
     defaultVariants: {
