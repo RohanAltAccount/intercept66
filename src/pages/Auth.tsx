@@ -1,15 +1,20 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Satellite, Mail, Lock, User, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Satellite, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(searchParams.get("mode") === "signup");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -20,10 +25,68 @@ export default function Auth() {
     setIsSignUp(searchParams.get("mode") === "signup");
   }, [searchParams]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check if user is already logged in
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        navigate("/dashboard");
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        navigate("/dashboard");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication with Supabase
-    console.log("Form submitted:", formData);
+    setIsLoading(true);
+
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: { full_name: formData.name },
+          },
+        });
+
+        if (error) {
+          toast({
+            title: error.message.includes("already registered") ? "Account exists" : "Sign up failed",
+            description: error.message.includes("already registered") 
+              ? "This email is already registered. Please sign in instead."
+              : error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({ title: "Account created!", description: "You have been signed in successfully." });
+          navigate("/dashboard");
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (error) {
+          toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+        } else {
+          toast({ title: "Welcome back!", description: "You have been signed in successfully." });
+          navigate("/dashboard");
+        }
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "An unexpected error occurred. Please try again.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -83,6 +146,7 @@ export default function Auth() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -100,6 +164,7 @@ export default function Auth() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -116,30 +181,29 @@ export default function Auth() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
+                    minLength={6}
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
               
-              {!isSignUp && (
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    className="text-sm text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-              )}
-              
-              <Button type="submit" variant="hero" className="w-full" size="lg">
-                {isSignUp ? "Create Account" : "Sign In"}
+              <Button type="submit" variant="hero" className="w-full" size="lg" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {isSignUp ? "Creating Account..." : "Signing In..."}
+                  </>
+                ) : (
+                  isSignUp ? "Create Account" : "Sign In"
+                )}
               </Button>
             </form>
             
@@ -151,6 +215,7 @@ export default function Auth() {
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="text-primary hover:text-primary/80 font-medium transition-colors"
+                disabled={isLoading}
               >
                 {isSignUp ? "Sign in" : "Sign up"}
               </button>
