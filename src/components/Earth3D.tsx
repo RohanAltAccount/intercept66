@@ -1,53 +1,29 @@
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Sphere, Stars, Line, Html } from "@react-three/drei";
 import * as THREE from "three";
+import { Satellite as SatelliteData } from "@/hooks/useSatelliteData";
 
-interface Satellite {
-  id: string;
-  name: string;
-  orbitRadius: number;
-  orbitSpeed: number;
-  orbitTilt: number;
-  color: string;
-  status: "safe" | "warning" | "danger";
+interface Earth3DProps {
+  satellites?: SatelliteData[];
+  selectedSatelliteId?: string | null;
+  onSelectSatellite?: (id: string | null) => void;
 }
 
-interface Debris {
-  id: string;
-  position: [number, number, number];
-  size: number;
-}
-
-const satellites: Satellite[] = [
-  { id: "sat-1", name: "INTERCEPT-A1", orbitRadius: 2.2, orbitSpeed: 0.3, orbitTilt: 0.3, color: "#00ffff", status: "safe" },
-  { id: "sat-2", name: "INTERCEPT-B2", orbitRadius: 2.5, orbitSpeed: 0.25, orbitTilt: -0.2, color: "#00ff88", status: "safe" },
-  { id: "sat-3", name: "INTERCEPT-C3", orbitRadius: 2.8, orbitSpeed: 0.2, orbitTilt: 0.5, color: "#ffaa00", status: "warning" },
-  { id: "sat-4", name: "INTERCEPT-D4", orbitRadius: 3.1, orbitSpeed: 0.15, orbitTilt: -0.4, color: "#ff4444", status: "danger" },
-];
-
-const debrisData: Debris[] = Array.from({ length: 50 }, (_, i) => ({
-  id: `debris-${i}`,
-  position: [
-    (Math.random() - 0.5) * 6,
-    (Math.random() - 0.5) * 6,
-    (Math.random() - 0.5) * 6,
-  ] as [number, number, number],
-  size: Math.random() * 0.03 + 0.01,
-}));
+const EARTH_RADIUS_KM = 6378.137;
+const SCALE_FACTOR = 1.5 / EARTH_RADIUS_KM;
 
 function Earth() {
   const earthRef = useRef<THREE.Mesh>(null);
   
   useFrame(() => {
     if (earthRef.current) {
-      earthRef.current.rotation.y += 0.001;
+      earthRef.current.rotation.y += 0.0002;
     }
   });
 
   return (
     <group>
-      {/* Earth */}
       <Sphere ref={earthRef} args={[1.5, 64, 64]}>
         <meshStandardMaterial
           color="#1a4a8a"
@@ -56,7 +32,6 @@ function Earth() {
         />
       </Sphere>
       
-      {/* Atmosphere glow */}
       <Sphere args={[1.55, 64, 64]}>
         <meshBasicMaterial
           color="#00ccff"
@@ -66,7 +41,6 @@ function Earth() {
         />
       </Sphere>
       
-      {/* Grid lines on Earth */}
       {[...Array(6)].map((_, i) => (
         <Line
           key={`lat-${i}`}
@@ -83,7 +57,7 @@ function Earth() {
 
 function generateCircle(radius: number, segments: number, yOffset: number = 0): [number, number, number][] {
   const points: [number, number, number][] = [];
-  const adjustedRadius = Math.sqrt(radius * radius - yOffset * yOffset);
+  const adjustedRadius = Math.sqrt(Math.max(0, radius * radius - yOffset * yOffset));
   
   if (adjustedRadius > 0) {
     for (let i = 0; i <= segments; i++) {
@@ -98,77 +72,103 @@ function generateCircle(radius: number, segments: number, yOffset: number = 0): 
   return points;
 }
 
-function generateOrbitPoints(radius: number, tilt: number): [number, number, number][] {
-  const points: [number, number, number][] = [];
-  for (let i = 0; i <= 64; i++) {
-    const theta = (i / 64) * Math.PI * 2;
-    points.push([
-      Math.cos(theta) * radius,
-      Math.sin(theta) * radius * Math.sin(tilt),
-      Math.sin(theta) * radius * Math.cos(tilt),
-    ]);
-  }
-  return points;
+function latLonToVector3(lat: number, lon: number, altitude: number): [number, number, number] {
+  const r = (EARTH_RADIUS_KM + altitude) * SCALE_FACTOR;
+  const phi = (90 - lat) * (Math.PI / 180);
+  const theta = (lon + 180) * (Math.PI / 180);
+  
+  return [
+    -r * Math.sin(phi) * Math.cos(theta),
+    r * Math.cos(phi),
+    r * Math.sin(phi) * Math.sin(theta),
+  ];
 }
 
-function SatelliteObject({ satellite }: { satellite: Satellite }) {
-  const ref = useRef<THREE.Group>(null);
+interface RealSatelliteProps {
+  satellite: SatelliteData;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+}
+
+function RealSatellite({ satellite, isSelected, onSelect }: RealSatelliteProps) {
   const [hovered, setHovered] = useState(false);
   
-  useFrame(({ clock }) => {
-    if (ref.current) {
-      const t = clock.getElapsedTime() * satellite.orbitSpeed;
-      ref.current.position.x = Math.cos(t) * satellite.orbitRadius;
-      ref.current.position.y = Math.sin(t) * satellite.orbitRadius * Math.sin(satellite.orbitTilt);
-      ref.current.position.z = Math.sin(t) * satellite.orbitRadius * Math.cos(satellite.orbitTilt);
-    }
-  });
+  const position = useMemo(() => {
+    return latLonToVector3(
+      satellite.position.latitude,
+      satellite.position.longitude,
+      satellite.position.altitude
+    );
+  }, [satellite.position]);
 
-  const orbitPoints = useMemo(() => generateOrbitPoints(satellite.orbitRadius, satellite.orbitTilt), [satellite]);
+  const groundTrackPoints = useMemo(() => {
+    return satellite.groundTrack.map(pos => 
+      latLonToVector3(pos.latitude, pos.longitude, pos.altitude)
+    );
+  }, [satellite.groundTrack]);
+
+  const color = useMemo(() => {
+    if (satellite.elements.inclination > 80) return "#ff6b6b";
+    if (satellite.elements.inclination > 50) return "#ffd93d";
+    return "#6bcb77";
+  }, [satellite.elements.inclination]);
 
   return (
     <group>
-      {/* Orbit path */}
-      <Line
-        points={orbitPoints}
-        color={satellite.color}
-        lineWidth={1}
-        transparent
-        opacity={0.3}
-        dashed
-        dashSize={0.1}
-        gapSize={0.05}
-      />
+      {(isSelected || hovered) && groundTrackPoints.length > 1 && (
+        <Line
+          points={groundTrackPoints}
+          color={color}
+          lineWidth={1}
+          transparent
+          opacity={0.5}
+          dashed
+          dashSize={0.05}
+          gapSize={0.02}
+        />
+      )}
       
-      {/* Satellite */}
       <group 
-        ref={ref}
+        position={position}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
+        onClick={() => onSelect(satellite.id)}
       >
-        <Sphere args={[0.06, 16, 16]}>
-          <meshBasicMaterial color={satellite.color} />
+        <Sphere args={[isSelected ? 0.08 : 0.05, 16, 16]}>
+          <meshBasicMaterial color={color} />
         </Sphere>
         
-        {/* Glow effect */}
-        <Sphere args={[0.1, 16, 16]}>
+        <Sphere args={[isSelected ? 0.12 : 0.08, 16, 16]}>
           <meshBasicMaterial
-            color={satellite.color}
+            color={color}
             transparent
-            opacity={0.3}
+            opacity={isSelected ? 0.5 : 0.3}
           />
         </Sphere>
         
-        {hovered && (
+        {(hovered || isSelected) && (
           <Html distanceFactor={10}>
-            <div className="bg-card/90 backdrop-blur-sm px-3 py-2 rounded-lg border border-primary/30 whitespace-nowrap">
-              <p className="text-primary font-mono text-xs">{satellite.name}</p>
-              <p className="text-muted-foreground text-[10px]">
-                Status: <span className={
-                  satellite.status === "safe" ? "text-success" :
-                  satellite.status === "warning" ? "text-warning" : "text-danger"
-                }>{satellite.status.toUpperCase()}</span>
-              </p>
+            <div className="bg-card/90 backdrop-blur-sm px-3 py-2 rounded-lg border border-primary/30 whitespace-nowrap min-w-[180px]">
+              <p className="text-primary font-mono text-xs font-bold">{satellite.name.toLowerCase()}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">norad id: {satellite.id}</p>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 text-[10px]">
+                <div>
+                  <span className="text-muted-foreground">alt:</span>
+                  <span className="text-foreground ml-1">{satellite.position.altitude.toFixed(1)} km</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">vel:</span>
+                  <span className="text-foreground ml-1">{satellite.position.velocity.toFixed(2)} km/s</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">lat:</span>
+                  <span className="text-foreground ml-1">{satellite.position.latitude.toFixed(2)}°</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">lon:</span>
+                  <span className="text-foreground ml-1">{satellite.position.longitude.toFixed(2)}°</span>
+                </div>
+              </div>
             </div>
           </Html>
         )}
@@ -177,28 +177,13 @@ function SatelliteObject({ satellite }: { satellite: Satellite }) {
   );
 }
 
-function DebrisField() {
-  const ref = useRef<THREE.Group>(null);
-  
-  useFrame(() => {
-    if (ref.current) {
-      ref.current.rotation.y += 0.0005;
-      ref.current.rotation.x += 0.0002;
-    }
-  });
-
-  return (
-    <group ref={ref}>
-      {debrisData.map((debris) => (
-        <Sphere key={debris.id} args={[debris.size, 8, 8]} position={debris.position}>
-          <meshBasicMaterial color="#666666" transparent opacity={0.6} />
-        </Sphere>
-      ))}
-    </group>
-  );
+interface SceneProps {
+  satellites: SatelliteData[];
+  selectedSatelliteId: string | null;
+  onSelectSatellite: (id: string | null) => void;
 }
 
-function Scene() {
+function Scene({ satellites, selectedSatelliteId, onSelectSatellite }: SceneProps) {
   return (
     <>
       <ambientLight intensity={0.3} />
@@ -210,34 +195,39 @@ function Scene() {
       <Earth />
       
       {satellites.map((sat) => (
-        <SatelliteObject key={sat.id} satellite={sat} />
+        <RealSatellite 
+          key={sat.id} 
+          satellite={sat}
+          isSelected={selectedSatelliteId === sat.id}
+          onSelect={onSelectSatellite}
+        />
       ))}
-      
-      <DebrisField />
       
       <OrbitControls
         enableZoom={true}
         enablePan={false}
-        minDistance={3}
+        minDistance={2}
         maxDistance={15}
         autoRotate
-        autoRotateSpeed={0.3}
+        autoRotateSpeed={0.2}
       />
     </>
   );
 }
 
-import { useState } from "react";
-
-export default function Earth3D() {
+export default function Earth3D({ satellites = [], selectedSatelliteId = null, onSelectSatellite = () => {} }: Earth3DProps) {
   return (
     <div className="w-full h-full">
       <Canvas
-        camera={{ position: [0, 2, 6], fov: 45 }}
+        camera={{ position: [0, 2, 5], fov: 45 }}
         gl={{ antialias: true, alpha: true }}
         style={{ background: "transparent" }}
       >
-        <Scene />
+        <Scene 
+          satellites={satellites}
+          selectedSatelliteId={selectedSatelliteId}
+          onSelectSatellite={onSelectSatellite}
+        />
       </Canvas>
     </div>
   );
