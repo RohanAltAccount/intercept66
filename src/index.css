@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -16,10 +16,10 @@
     --popover: 222 47% 8%;
     --popover-foreground: 210 40% 96%;
 
-    /* Dark Purple Primary */
-    --primary: 260 100% 23%;
+    /* vibrant purple primary */
+    --primary: 260 100% 43%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 260 80% 45%;
+    --primary-glow: 260 80% 55%;
 
     /* Deep Navy Secondary */
     --secondary: 220 50% 15%;
@@ -46,35 +46,35 @@
 
     --border: 220 30% 18%;
     --input: 220 30% 15%;
-    --ring: 260 100% 23%;
+    --ring: 260 100% 43%;
 
     --radius: 0.5rem;
 
     /* Gradients */
     --gradient-space: linear-gradient(180deg, hsl(222 47% 5%) 0%, hsl(220 50% 10%) 50%, hsl(222 47% 5%) 100%);
-    --gradient-glow: linear-gradient(135deg, hsl(260 100% 23% / 0.2) 0%, hsl(260 80% 45% / 0.1) 100%);
+    --gradient-glow: linear-gradient(135deg, hsl(260 100% 43% / 0.2) 0%, hsl(260 80% 55% / 0.1) 100%);
     --gradient-card: linear-gradient(135deg, hsl(220 50% 12%) 0%, hsl(222 47% 8%) 100%);
     --gradient-hero: radial-gradient(ellipse at center, hsl(220 50% 15%) 0%, hsl(222 47% 5%) 70%);
     --gradient-danger: linear-gradient(135deg, hsl(0 84% 60% / 0.3) 0%, hsl(0 84% 40% / 0.1) 100%);
 
     /* Shadows */
-    --shadow-glow: 0 0 30px hsl(260 100% 23% / 0.3);
-    --shadow-glow-sm: 0 0 15px hsl(260 100% 23% / 0.2);
+    --shadow-glow: 0 0 30px hsl(260 100% 43% / 0.3);
+    --shadow-glow-sm: 0 0 15px hsl(260 100% 43% / 0.2);
     --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.4);
     --shadow-danger: 0 0 20px hsl(0 84% 60% / 0.4);
 
     /* Sidebar */
     --sidebar-background: 222 47% 6%;
     --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 260 100% 23%;
+    --sidebar-primary: 260 100% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 50% 15%;
     --sidebar-accent-foreground: 210 40% 96%;
     --sidebar-border: 220 30% 18%;
-    --sidebar-ring: 260 100% 23%;
+    --sidebar-ring: 260 100% 43%;
 
     /* Chart Colors */
-    --chart-1: 260 100% 23%;
+    --chart-1: 260 100% 43%;
     --chart-2: 142 76% 45%;
     --chart-3: 38 100% 55%;
     --chart-4: 280 80% 60%;
@@ -88,7 +88,7 @@
     --card-foreground: 210 40% 96%;
     --popover: 222 47% 8%;
     --popover-foreground: 210 40% 96%;
-    --primary: 260 100% 23%;
+    --primary: 260 100% 43%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 50% 15%;
     --secondary-foreground: 210 40% 96%;
@@ -100,7 +100,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 220 30% 18%;
     --input: 220 30% 15%;
-    --ring: 260 100% 23%;
+    --ring: 260 100% 43%;
   }
 }
 
@@ -110,13 +110,21 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased lowercase;
     background: var(--gradient-space);
     min-height: 100vh;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display tracking-tight;
+    @apply font-display tracking-tight lowercase;
+  }
+
+  button, a, span, p, label, input, textarea {
+    @apply lowercase;
+  }
+
+  input::placeholder, textarea::placeholder {
+    @apply lowercase;
   }
 }
 
