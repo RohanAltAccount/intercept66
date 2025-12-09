@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Satellite, Target, LayoutDashboard, Package, Menu, X } from "lucide-react";
+import { Satellite, Target, LayoutDashboard, Package, Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -13,6 +14,7 @@ const navLinks = [
 export default function Navbar() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated, signOut } = useAuth();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-border/50">
@@ -54,16 +56,25 @@ export default function Navbar() {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/auth">
-              <Button variant="ghost" size="sm">
-                Sign In
+            {isAuthenticated ? (
+              <Button variant="ghost" size="sm" onClick={signOut}>
+                <LogOut className="w-4 h-4 mr-2" />
+                sign out
               </Button>
-            </Link>
-            <Link to="/auth?mode=signup">
-              <Button variant="hero" size="sm">
-                Get Started
-              </Button>
-            </Link>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button variant="ghost" size="sm">
+                    sign in
+                  </Button>
+                </Link>
+                <Link to="/auth?mode=signup">
+                  <Button variant="hero" size="sm">
+                    get started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -101,16 +112,25 @@ export default function Navbar() {
                 );
               })}
               <div className="border-t border-border/50 my-2" />
-              <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="ghost" className="w-full justify-start">
-                  Sign In
+              {isAuthenticated ? (
+                <Button variant="ghost" className="w-full justify-start" onClick={() => { signOut(); setMobileMenuOpen(false); }}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  sign out
                 </Button>
-              </Link>
-              <Link to="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="hero" className="w-full">
-                  Get Started
-                </Button>
-              </Link>
+              ) : (
+                <>
+                  <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      sign in
+                    </Button>
+                  </Link>
+                  <Link to="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="hero" className="w-full">
+                      get started
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}
