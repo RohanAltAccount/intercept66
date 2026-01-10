@@ -5,8 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Earth3D from "@/components/Earth3D";
 import { useSatelliteData } from "@/hooks/useSatelliteData";
+import { useUserSatellites } from "@/hooks/useUserSatellites";
+import AddSatelliteForm from "@/components/AddSatelliteForm";
+import UserSatelliteList from "@/components/UserSatelliteList";
+import CollisionPanel from "@/components/CollisionPanel";
 import { 
   Target, 
   Search, 
@@ -15,7 +20,9 @@ import {
   TrendingUp,
   Radar,
   Satellite,
-  Loader2
+  Loader2,
+  Zap,
+  Rocket
 } from "lucide-react";
 import { Suspense } from "react";
 
@@ -23,8 +30,16 @@ export default function Tracker() {
   const [searchQuery, setSearchQuery] = useState("");
   const [category, setCategory] = useState("stations");
   const [selectedSatelliteId, setSelectedSatelliteId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("add");
   
   const { satellites, isLoading, error, lastUpdated, refetch } = useSatelliteData(category);
+  const { 
+    userSatellites, 
+    collisionPredictions, 
+    addSatellite, 
+    removeSatellite, 
+    clearAllSatellites 
+  } = useUserSatellites(satellites);
   
   const filteredSatellites = satellites.filter(
     (sat) =>
@@ -32,7 +47,9 @@ export default function Tracker() {
       sat.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const highAltCount = satellites.filter(s => s.position.altitude > 1000).length;
+  const totalTracked = satellites.length + userSatellites.length;
+  const dangerCount = collisionPredictions.filter(p => p.riskLevel === 'danger').length;
+  const proximityCount = collisionPredictions.filter(p => p.riskLevel === 'proximity').length;
   const avgVelocity = satellites.length > 0 
     ? (satellites.reduce((acc, s) => acc + s.position.velocity, 0) / satellites.length).toFixed(2)
     : "0.00";
@@ -48,10 +65,10 @@ export default function Tracker() {
             <div>
               <h1 className="text-3xl font-display font-bold mb-2 flex items-center gap-3">
                 <Target className="w-8 h-8 text-primary" />
-                satellite tracker
+                collision tracker
               </h1>
               <p className="text-muted-foreground">
-                real-time satellite tracking with orbital mechanics calculations
+                add satellites and monitor collision predictions in real-time
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -82,8 +99,8 @@ export default function Tracker() {
                     <Radar className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-display font-bold">{satellites.length}</p>
-                    <p className="text-xs text-muted-foreground">satellites tracked</p>
+                    <p className="text-2xl font-display font-bold">{totalTracked}</p>
+                    <p className="text-xs text-muted-foreground">total tracked</p>
                   </div>
                 </div>
               </CardContent>
@@ -91,12 +108,12 @@ export default function Tracker() {
             <Card variant="glass">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-danger/20">
-                    <AlertTriangle className="w-5 h-5 text-danger" />
+                  <div className={`p-2 rounded-lg ${dangerCount > 0 ? 'bg-danger/20 animate-pulse' : 'bg-success/20'}`}>
+                    <Zap className={`w-5 h-5 ${dangerCount > 0 ? 'text-danger' : 'text-success'}`} />
                   </div>
                   <div>
-                    <p className="text-2xl font-display font-bold">{highAltCount}</p>
-                    <p className="text-xs text-muted-foreground">high altitude (&gt;1000km)</p>
+                    <p className="text-2xl font-display font-bold">{dangerCount}</p>
+                    <p className="text-xs text-muted-foreground">collision risks</p>
                   </div>
                 </div>
               </CardContent>
@@ -105,11 +122,11 @@ export default function Tracker() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-warning/20">
-                    <Satellite className="w-5 h-5 text-warning" />
+                    <AlertTriangle className="w-5 h-5 text-warning" />
                   </div>
                   <div>
-                    <p className="text-2xl font-display font-bold">{avgVelocity}</p>
-                    <p className="text-xs text-muted-foreground">avg velocity (km/s)</p>
+                    <p className="text-2xl font-display font-bold">{proximityCount}</p>
+                    <p className="text-xs text-muted-foreground">proximity alerts</p>
                   </div>
                 </div>
               </CardContent>
@@ -117,16 +134,12 @@ export default function Tracker() {
             <Card variant="glass">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-success/20">
-                    <TrendingUp className="w-5 h-5 text-success" />
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <Rocket className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-display font-bold">
-                      {lastUpdated ? "live" : "-"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {lastUpdated ? `updated ${lastUpdated.toLocaleTimeString()}` : "not updated"}
-                    </p>
+                    <p className="text-2xl font-display font-bold">{userSatellites.length}</p>
+                    <p className="text-xs text-muted-foreground">your satellites</p>
                   </div>
                 </div>
               </CardContent>
@@ -134,13 +147,23 @@ export default function Tracker() {
           </div>
           
           {/* Main Content */}
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid lg:grid-cols-3 gap-6">
             {/* 3D View */}
-            <Card variant="glow" className="h-[600px]">
+            <Card variant="glow" className="lg:col-span-2 h-[600px]">
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <Radar className="w-5 h-5 text-primary" />
-                  live tracking view
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Radar className="w-5 h-5 text-primary" />
+                    live orbital view
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {dangerCount > 0 && (
+                      <Badge variant="destructive" className="animate-pulse">
+                        {dangerCount} collision risk{dangerCount > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    <Badge variant="orbital">live</Badge>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0 h-[calc(100%-60px)]">
@@ -151,48 +174,83 @@ export default function Tracker() {
                 }>
                   <Earth3D 
                     satellites={satellites}
+                    userSatellites={userSatellites}
                     selectedSatelliteId={selectedSatelliteId}
                     onSelectSatellite={setSelectedSatelliteId}
+                    collisionPredictions={collisionPredictions}
                   />
                 </Suspense>
               </CardContent>
             </Card>
             
-            {/* Satellite List */}
-            <Card variant="glass" className="h-[600px] flex flex-col">
-              <CardHeader>
-                <CardTitle>tracked satellites</CardTitle>
-                <div className="flex gap-2 mt-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      placeholder="search by id or name..."
-                      className="pl-9 bg-secondary/50"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
+            {/* Right Panel */}
+            <div className="space-y-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="w-full">
+                  <TabsTrigger value="add" className="flex-1">add satellite</TabsTrigger>
+                  <TabsTrigger value="collisions" className="flex-1">
+                    collisions
+                    {(dangerCount + proximityCount) > 0 && (
+                      <Badge variant="outline" className="ml-2 text-[10px]">
+                        {dangerCount + proximityCount}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="add" className="space-y-4 mt-4">
+                  <AddSatelliteForm onAddSatellite={addSatellite} />
+                  <UserSatelliteList 
+                    satellites={userSatellites}
+                    onRemove={removeSatellite}
+                    onClearAll={clearAllSatellites}
+                    selectedId={selectedSatelliteId}
+                    onSelect={setSelectedSatelliteId}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="collisions" className="mt-4">
+                  <CollisionPanel predictions={collisionPredictions} />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+          
+          {/* Real Satellite List */}
+          <Card variant="glass" className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Satellite className="w-5 h-5 text-primary" />
+                real-world satellites ({satellites.length})
+              </CardTitle>
+              <div className="flex gap-2 mt-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="search by id or name..."
+                    className="pl-9 bg-secondary/50"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-              </CardHeader>
-              <CardContent className="flex-1 overflow-auto space-y-3">
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                  </div>
-                ) : error ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <AlertTriangle className="w-12 h-12 text-danger mb-4" />
-                    <p className="text-danger">{error}</p>
-                    <Button variant="outline" className="mt-4" onClick={refetch}>
-                      try again
-                    </Button>
-                  </div>
-                ) : filteredSatellites.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    no satellites found
-                  </div>
-                ) : (
-                  filteredSatellites.map((sat) => (
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                </div>
+              ) : error ? (
+                <div className="flex flex-col items-center justify-center h-32 text-center">
+                  <AlertTriangle className="w-12 h-12 text-danger mb-4" />
+                  <p className="text-danger">{error}</p>
+                  <Button variant="outline" className="mt-4" onClick={refetch}>
+                    try again
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[400px] overflow-auto">
+                  {filteredSatellites.slice(0, 12).map((sat) => (
                     <div
                       key={sat.id}
                       className={`p-4 rounded-lg bg-secondary/30 border transition-all duration-300 cursor-pointer ${
@@ -202,72 +260,30 @@ export default function Tracker() {
                       }`}
                       onClick={() => setSelectedSatelliteId(sat.id === selectedSatelliteId ? null : sat.id)}
                     >
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start justify-between mb-2">
                         <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-mono text-sm font-semibold">{sat.name.toLowerCase()}</h4>
-                            <Badge variant="orbital" className="text-[10px]">
-                              live
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            norad {sat.id} • period {sat.elements.period.toFixed(1)} min
-                          </p>
+                          <h4 className="font-mono text-sm font-semibold truncate">{sat.name.toLowerCase()}</h4>
+                          <p className="text-xs text-muted-foreground">norad {sat.id}</p>
                         </div>
+                        <Badge variant="orbital" className="text-[10px]">live</Badge>
                       </div>
                       
-                      <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
                           <p className="text-muted-foreground">altitude</p>
-                          <p className="font-mono">{sat.position.altitude.toFixed(1)} km</p>
+                          <p className="font-mono">{sat.position.altitude.toFixed(0)} km</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">velocity</p>
                           <p className="font-mono">{sat.position.velocity.toFixed(2)} km/s</p>
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">inclination</p>
-                          <p className="font-mono">{sat.elements.inclination.toFixed(1)}°</p>
-                        </div>
                       </div>
-                      
-                      <div className="grid grid-cols-2 gap-3 text-xs mt-2 pt-2 border-t border-border/30">
-                        <div>
-                          <p className="text-muted-foreground">latitude</p>
-                          <p className="font-mono">{sat.position.latitude.toFixed(4)}°</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">longitude</p>
-                          <p className="font-mono">{sat.position.longitude.toFixed(4)}°</p>
-                        </div>
-                      </div>
-
-                      {selectedSatelliteId === sat.id && (
-                        <div className="grid grid-cols-2 gap-3 text-xs mt-2 pt-2 border-t border-border/30">
-                          <div>
-                            <p className="text-muted-foreground">apogee</p>
-                            <p className="font-mono">{sat.elements.apogee.toFixed(1)} km</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">perigee</p>
-                            <p className="font-mono">{sat.elements.perigee.toFixed(1)} km</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">eccentricity</p>
-                            <p className="font-mono">{sat.elements.eccentricity.toFixed(6)}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">semi-major axis</p>
-                            <p className="font-mono">{sat.elements.semiMajorAxis.toFixed(1)} km</p>
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
