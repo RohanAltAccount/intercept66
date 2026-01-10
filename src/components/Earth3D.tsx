@@ -3,11 +3,15 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Sphere, Stars, Line, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { Satellite as SatelliteData } from "@/hooks/useSatelliteData";
+import { UserSatelliteWithState } from "@/hooks/useUserSatellites";
+import { CollisionPrediction } from "@/lib/collision-detection";
 
 interface Earth3DProps {
   satellites?: SatelliteData[];
+  userSatellites?: UserSatelliteWithState[];
   selectedSatelliteId?: string | null;
   onSelectSatellite?: (id: string | null) => void;
+  collisionPredictions?: CollisionPrediction[];
 }
 
 const EARTH_RADIUS_KM = 6378.137;
@@ -81,6 +85,14 @@ function latLonToVector3(lat: number, lon: number, altitude: number): [number, n
     -r * Math.sin(phi) * Math.cos(theta),
     r * Math.cos(phi),
     r * Math.sin(phi) * Math.sin(theta),
+  ];
+}
+
+function eciToScenePosition(x: number, y: number, z: number): [number, number, number] {
+  return [
+    x * SCALE_FACTOR,
+    z * SCALE_FACTOR, // swap y and z for scene coordinates
+    y * SCALE_FACTOR,
   ];
 }
 
@@ -177,13 +189,150 @@ function RealSatellite({ satellite, isSelected, onSelect }: RealSatelliteProps) 
   );
 }
 
-interface SceneProps {
-  satellites: SatelliteData[];
-  selectedSatelliteId: string | null;
-  onSelectSatellite: (id: string | null) => void;
+interface UserSatelliteComponentProps {
+  satellite: UserSatelliteWithState;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
 }
 
-function Scene({ satellites, selectedSatelliteId, onSelectSatellite }: SceneProps) {
+function UserSatelliteComponent({ satellite, isSelected, onSelect }: UserSatelliteComponentProps) {
+  const [hovered, setHovered] = useState(false);
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  const position = useMemo((): [number, number, number] => {
+    return eciToScenePosition(
+      satellite.currentState.x,
+      satellite.currentState.y,
+      satellite.currentState.z
+    );
+  }, [satellite.currentState]);
+
+  // generate orbital path
+  const orbitPath = useMemo(() => {
+    const points: [number, number, number][] = [];
+    const r = Math.sqrt(satellite.x * satellite.x + satellite.y * satellite.y + satellite.z * satellite.z);
+    const orbitalRadius = Math.sqrt(satellite.x * satellite.x + satellite.y * satellite.y);
+    
+    for (let i = 0; i <= 64; i++) {
+      const angle = (i / 64) * Math.PI * 2;
+      const x = orbitalRadius * Math.cos(angle);
+      const y = orbitalRadius * Math.sin(angle);
+      const z = satellite.z;
+      points.push(eciToScenePosition(x, y, z));
+    }
+    return points;
+  }, [satellite.x, satellite.y, satellite.z]);
+
+  // pulse animation for user satellites
+  useFrame((state) => {
+    if (meshRef.current) {
+      const scale = 1 + Math.sin(state.clock.elapsedTime * 3) * 0.1;
+      meshRef.current.scale.setScalar(isSelected ? scale * 1.2 : scale);
+    }
+  });
+
+  return (
+    <group>
+      {/* orbital path */}
+      {(isSelected || hovered) && (
+        <Line
+          points={orbitPath}
+          color={satellite.color}
+          lineWidth={1}
+          transparent
+          opacity={0.6}
+        />
+      )}
+      
+      <group 
+        position={position}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+        onClick={() => onSelect(satellite.id)}
+      >
+        {/* main satellite body */}
+        <mesh ref={meshRef}>
+          <boxGeometry args={[0.08, 0.04, 0.04]} />
+          <meshStandardMaterial color={satellite.color} emissive={satellite.color} emissiveIntensity={0.5} />
+        </mesh>
+        
+        {/* glow sphere */}
+        <Sphere args={[isSelected ? 0.15 : 0.1, 16, 16]}>
+          <meshBasicMaterial
+            color={satellite.color}
+            transparent
+            opacity={isSelected ? 0.4 : 0.2}
+          />
+        </Sphere>
+        
+        {(hovered || isSelected) && (
+          <Html distanceFactor={10}>
+            <div className="bg-card/90 backdrop-blur-sm px-3 py-2 rounded-lg border border-primary/30 whitespace-nowrap min-w-[180px]">
+              <p className="font-mono text-xs font-bold" style={{ color: satellite.color }}>{satellite.name}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">user satellite</p>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 text-[10px]">
+                <div>
+                  <span className="text-muted-foreground">alt:</span>
+                  <span className="text-foreground ml-1">{satellite.currentState.altitude.toFixed(0)} km</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">vel:</span>
+                  <span className="text-foreground ml-1">{satellite.currentState.velocity.toFixed(2)} km/s</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">mass:</span>
+                  <span className="text-foreground ml-1">{satellite.mass} kg</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">pos:</span>
+                  <span className="text-foreground ml-1">({satellite.currentState.x.toFixed(0)}, {satellite.currentState.y.toFixed(0)}, {satellite.currentState.z.toFixed(0)})</span>
+                </div>
+              </div>
+            </div>
+          </Html>
+        )}
+      </group>
+    </group>
+  );
+}
+
+interface CollisionLineProps {
+  prediction: CollisionPrediction;
+}
+
+function CollisionLine({ prediction }: CollisionLineProps) {
+  const points = useMemo((): [number, number, number][] => {
+    return [
+      eciToScenePosition(prediction.sat1Position.x, prediction.sat1Position.y, prediction.sat1Position.z),
+      eciToScenePosition(prediction.sat2Position.x, prediction.sat2Position.y, prediction.sat2Position.z),
+    ];
+  }, [prediction]);
+
+  const color = prediction.riskLevel === 'danger' ? '#ff4444' : '#ffaa00';
+
+  return (
+    <Line
+      points={points}
+      color={color}
+      lineWidth={2}
+      transparent
+      opacity={0.8}
+      dashed
+      dashSize={0.1}
+      gapSize={0.05}
+    />
+  );
+}
+
+interface SceneProps {
+  satellites: SatelliteData[];
+  userSatellites: UserSatelliteWithState[];
+  selectedSatelliteId: string | null;
+  onSelectSatellite: (id: string | null) => void;
+  collisionPredictions: CollisionPrediction[];
+}
+
+function Scene({ satellites, userSatellites, selectedSatelliteId, onSelectSatellite, collisionPredictions }: SceneProps) {
   return (
     <>
       <ambientLight intensity={0.3} />
@@ -194,6 +343,7 @@ function Scene({ satellites, selectedSatelliteId, onSelectSatellite }: SceneProp
       
       <Earth />
       
+      {/* real satellites from TLE data */}
       {satellites.map((sat) => (
         <RealSatellite 
           key={sat.id} 
@@ -202,6 +352,24 @@ function Scene({ satellites, selectedSatelliteId, onSelectSatellite }: SceneProp
           onSelect={onSelectSatellite}
         />
       ))}
+      
+      {/* user-defined satellites */}
+      {userSatellites.map((sat) => (
+        <UserSatelliteComponent 
+          key={sat.id} 
+          satellite={sat}
+          isSelected={selectedSatelliteId === sat.id}
+          onSelect={onSelectSatellite}
+        />
+      ))}
+      
+      {/* collision warning lines */}
+      {collisionPredictions
+        .filter(p => p.riskLevel !== 'safe')
+        .slice(0, 5)
+        .map((prediction, index) => (
+          <CollisionLine key={`collision-${index}`} prediction={prediction} />
+        ))}
       
       <OrbitControls
         enableZoom={true}
@@ -215,7 +383,13 @@ function Scene({ satellites, selectedSatelliteId, onSelectSatellite }: SceneProp
   );
 }
 
-export default function Earth3D({ satellites = [], selectedSatelliteId = null, onSelectSatellite = () => {} }: Earth3DProps) {
+export default function Earth3D({ 
+  satellites = [], 
+  userSatellites = [],
+  selectedSatelliteId = null, 
+  onSelectSatellite = () => {},
+  collisionPredictions = []
+}: Earth3DProps) {
   return (
     <div className="w-full h-full">
       <Canvas
@@ -225,8 +399,10 @@ export default function Earth3D({ satellites = [], selectedSatelliteId = null, o
       >
         <Scene 
           satellites={satellites}
+          userSatellites={userSatellites}
           selectedSatelliteId={selectedSatelliteId}
           onSelectSatellite={onSelectSatellite}
+          collisionPredictions={collisionPredictions}
         />
       </Canvas>
     </div>
