@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Earth3D from "@/components/Earth3D";
+import WorldMap2D from "@/components/WorldMap2D";
 import { useSatelliteData } from "@/hooks/useSatelliteData";
 import { useUserSatellites } from "@/hooks/useUserSatellites";
 import AddSatelliteForm from "@/components/AddSatelliteForm";
@@ -17,12 +18,13 @@ import {
   Search, 
   RefreshCw,
   AlertTriangle,
-  TrendingUp,
   Radar,
   Satellite,
   Loader2,
   Zap,
-  Rocket
+  Rocket,
+  Globe,
+  Map
 } from "lucide-react";
 import { Suspense } from "react";
 
@@ -31,6 +33,7 @@ export default function Tracker() {
   const [category, setCategory] = useState("stations");
   const [selectedSatelliteId, setSelectedSatelliteId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("add");
+  const [viewMode, setViewMode] = useState<'3d' | '2d'>('3d');
   
   const { satellites, isLoading, error, lastUpdated, refetch } = useSatelliteData(category);
   const { 
@@ -148,15 +151,36 @@ export default function Tracker() {
           
           {/* Main Content */}
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* 3D View */}
+            {/* 3D/2D View */}
             <Card variant="glow" className="lg:col-span-2 h-[600px]">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Radar className="w-5 h-5 text-primary" />
-                    live orbital view
+                    {viewMode === '3d' ? 'live orbital view' : 'ground track map'}
                   </span>
                   <div className="flex items-center gap-2">
+                    {/* View Mode Toggle */}
+                    <div className="flex rounded-full bg-secondary/50 p-1">
+                      <Button
+                        variant={viewMode === '3d' ? 'glow' : 'ghost'}
+                        size="sm"
+                        className="rounded-full px-3 h-7"
+                        onClick={() => setViewMode('3d')}
+                      >
+                        <Globe className="w-4 h-4 mr-1" />
+                        3d
+                      </Button>
+                      <Button
+                        variant={viewMode === '2d' ? 'glow' : 'ghost'}
+                        size="sm"
+                        className="rounded-full px-3 h-7"
+                        onClick={() => setViewMode('2d')}
+                      >
+                        <Map className="w-4 h-4 mr-1" />
+                        2d
+                      </Button>
+                    </div>
                     {dangerCount > 0 && (
                       <Badge variant="destructive" className="animate-pulse">
                         {dangerCount} collision risk{dangerCount > 1 ? 's' : ''}
@@ -167,19 +191,28 @@ export default function Tracker() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0 h-[calc(100%-60px)]">
-                <Suspense fallback={
-                  <div className="flex items-center justify-center h-full">
-                    <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                  </div>
-                }>
-                  <Earth3D 
+                {viewMode === '3d' ? (
+                  <Suspense fallback={
+                    <div className="flex items-center justify-center h-full">
+                      <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    </div>
+                  }>
+                    <Earth3D 
+                      satellites={satellites}
+                      userSatellites={userSatellites}
+                      selectedSatelliteId={selectedSatelliteId}
+                      onSelectSatellite={setSelectedSatelliteId}
+                      collisionPredictions={collisionPredictions}
+                    />
+                  </Suspense>
+                ) : (
+                  <WorldMap2D
                     satellites={satellites}
                     userSatellites={userSatellites}
                     selectedSatelliteId={selectedSatelliteId}
                     onSelectSatellite={setSelectedSatelliteId}
-                    collisionPredictions={collisionPredictions}
                   />
-                </Suspense>
+                )}
               </CardContent>
             </Card>
             
