@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Satellite, Target, LayoutDashboard, Package, Menu, X, LogOut } from "lucide-react";
+import { Satellite, Target, LayoutDashboard, Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tracker", label: "Debris Tracker", icon: Target },
-  { href: "/assets", label: "Satellite Assets", icon: Package },
+  
 ];
 
 export default function Navbar() {
