@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Satellite } from '@/hooks/useSatelliteData';
 import { UserSatelliteWithState } from '@/hooks/useUserSatellites';
+import worldMapImage from '@/assets/world-map-mercator.png';
 
 interface WorldMap2DProps {
   satellites: Satellite[];
@@ -31,7 +32,7 @@ export default function WorldMap2D({
   onSelectSatellite 
 }: WorldMap2DProps) {
   const mapWidth = 800;
-  const mapHeight = 450;
+  const mapHeight = 600;
 
   // Generate ground tracks for satellites
   const satellitePaths = useMemo(() => {
@@ -97,12 +98,8 @@ export default function WorldMap2D({
         className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* Background gradient */}
+        {/* Glow filter for satellites */}
         <defs>
-          <linearGradient id="oceanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(220 50% 12%)" />
-            <stop offset="100%" stopColor="hsl(222 47% 8%)" />
-          </linearGradient>
           <filter id="glow">
             <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
             <feMerge>
@@ -112,51 +109,15 @@ export default function WorldMap2D({
           </filter>
         </defs>
         
-        {/* Ocean background */}
-        <rect width={mapWidth} height={mapHeight} fill="url(#oceanGradient)" />
-        
-        {/* Grid lines */}
-        {/* Longitude lines */}
-        {[-180, -150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150, 180].map(lon => {
-          const x = ((lon + 180) / 360) * mapWidth;
-          return (
-            <line 
-              key={`lon-${lon}`}
-              x1={x} y1={0} x2={x} y2={mapHeight}
-              stroke="hsl(260 100% 43% / 0.1)"
-              strokeWidth={lon === 0 ? 1 : 0.5}
-            />
-          );
-        })}
-        
-        {/* Latitude lines */}
-        {[-60, -30, 0, 30, 60].map(lat => {
-          const { y } = latLonToMercator(lat, 0, mapWidth, mapHeight);
-          return (
-            <line 
-              key={`lat-${lat}`}
-              x1={0} y1={y} x2={mapWidth} y2={y}
-              stroke="hsl(260 100% 43% / 0.1)"
-              strokeWidth={lat === 0 ? 1 : 0.5}
-            />
-          );
-        })}
-        
-        {/* Continent outlines - simplified */}
-        <g fill="hsl(220 30% 18%)" stroke="hsl(220 30% 25%)" strokeWidth="0.5">
-          {/* North America */}
-          <path d="M50,120 L80,100 L120,90 L160,85 L180,100 L200,95 L220,110 L210,130 L200,150 L180,160 L150,170 L120,180 L100,175 L80,160 L60,140 Z" />
-          {/* South America */}
-          <path d="M170,200 L190,190 L210,195 L220,220 L230,260 L220,300 L200,340 L180,360 L160,340 L155,300 L160,260 L165,220 Z" />
-          {/* Europe */}
-          <path d="M380,100 L400,95 L420,100 L440,95 L450,110 L445,130 L430,140 L410,135 L390,130 L380,120 Z" />
-          {/* Africa */}
-          <path d="M380,160 L420,155 L460,165 L480,190 L485,230 L480,280 L460,320 L430,340 L400,330 L380,300 L370,260 L375,220 L378,190 Z" />
-          {/* Asia */}
-          <path d="M450,80 L500,70 L560,60 L620,70 L680,90 L720,110 L740,130 L720,150 L680,160 L620,155 L560,140 L500,130 L460,120 L455,100 Z" />
-          {/* Australia */}
-          <path d="M640,280 L680,275 L720,285 L740,310 L735,340 L710,360 L670,355 L640,340 L635,310 Z" />
-        </g>
+        {/* World map background image */}
+        <image 
+          href={worldMapImage} 
+          x={0} 
+          y={0} 
+          width={mapWidth} 
+          height={mapHeight}
+          preserveAspectRatio="xMidYMid slice"
+        />
         
         {/* Real satellite ground tracks */}
         {satellitePaths.map(({ id, points }) => {
@@ -167,10 +128,10 @@ export default function WorldMap2D({
               key={`track-${id}`}
               d={path}
               fill="none"
-              stroke={isSelected ? 'hsl(260 100% 60%)' : 'hsl(260 100% 43% / 0.3)'}
+              stroke={isSelected ? 'hsl(260 100% 60%)' : 'hsl(260 100% 43% / 0.5)'}
               strokeWidth={isSelected ? 2 : 1}
               strokeDasharray={isSelected ? 'none' : '4 4'}
-              opacity={isSelected ? 1 : 0.6}
+              opacity={isSelected ? 1 : 0.7}
             />
           );
         })}
