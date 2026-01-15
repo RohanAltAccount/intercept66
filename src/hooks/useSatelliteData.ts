@@ -22,6 +22,15 @@ export function useSatelliteData(category: string = 'stations') {
     setError(null);
 
     try {
+      // Check if user is authenticated before calling the edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setError('Please log in to view satellite data');
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error: fnError } = await supabase.functions.invoke('fetch-tle', {
         body: { category },
       });
