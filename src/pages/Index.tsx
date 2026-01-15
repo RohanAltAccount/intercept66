@@ -28,7 +28,7 @@ const stats = [{
   value: "100+",
   label: "Debris Objects Tracked"
 }, {
-  value: "99.9%",
+  value: "80%",
   label: "Prediction Accuracy"
 }, {
   value: "< 1s",
