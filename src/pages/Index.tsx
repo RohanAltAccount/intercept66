@@ -10,7 +10,7 @@ import { Suspense } from "react";
 const features = [{
   icon: Globe,
   title: "Orbital Path Planner",
-  description: "Simulate satellite orbits, schedule launches, and visualize potential debris intersections in real-time."
+  description: "View satellite paths, plan launch coordinates, and simulate your own launches."
 }, {
   icon: Target,
   title: "Debris Tracker",
