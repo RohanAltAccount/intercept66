@@ -4,52 +4,41 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
 import Earth3D from "@/components/Earth3D";
-import { 
-  Satellite, 
-  Target, 
-  Shield, 
-  Zap, 
-  Globe,
-  ArrowRight,
-  CheckCircle2,
-  Sparkles
-} from "lucide-react";
+import { Satellite, Target, Shield, Zap, Globe, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Suspense } from "react";
-
-const features = [
-  {
-    icon: Globe,
-    title: "Orbital Path Planner",
-    description: "Simulate satellite orbits, schedule launches, and visualize potential debris intersections in real-time.",
-  },
-  {
-    icon: Target,
-    title: "Debris Tracker",
-    description: "Real-time space debris data with predictive collision alerts and automated avoidance recommendations.",
-  },
-  {
-    icon: Satellite,
-    title: "Asset Management",
-    description: "Track satellite parts, plan missions, and organize logistics for your entire constellation.",
-  },
-  {
-    icon: Shield,
-    title: "Collision Prevention",
-    description: "Advanced algorithms predict intersections and provide early warning for potential threats.",
-  },
-];
-
-const stats = [
-  { value: "23,000+", label: "Debris Objects Tracked" },
-  { value: "99.9%", label: "Prediction Accuracy" },
-  { value: "< 1s", label: "Alert Response Time" },
-  { value: "66", label: "Satellites Supported" },
-];
-
+const features = [{
+  icon: Globe,
+  title: "Orbital Path Planner",
+  description: "Simulate satellite orbits, schedule launches, and visualize potential debris intersections in real-time."
+}, {
+  icon: Target,
+  title: "Debris Tracker",
+  description: "Real-time space debris data with predictive collision alerts and automated avoidance recommendations."
+}, {
+  icon: Satellite,
+  title: "Asset Management",
+  description: "Track satellite parts, plan missions, and organize logistics for your entire constellation."
+}, {
+  icon: Shield,
+  title: "Collision Prevention",
+  description: "Advanced algorithms predict intersections and provide early warning for potential threats."
+}];
+const stats = [{
+  value: "23,000+",
+  label: "Debris Objects Tracked"
+}, {
+  value: "99.9%",
+  label: "Prediction Accuracy"
+}, {
+  value: "< 1s",
+  label: "Alert Response Time"
+}, {
+  value: "66",
+  label: "Satellites Supported"
+}];
 export default function Index() {
-  return (
-    <div className="min-h-screen bg-background overflow-hidden">
+  return <div className="min-h-screen bg-background overflow-hidden">
       <Navbar />
       
       {/* Hero Section */}
@@ -63,12 +52,15 @@ export default function Index() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left content */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="space-y-8"
-            >
+            <motion.div initial={{
+            opacity: 0,
+            y: 20
+          }} animate={{
+            opacity: 1,
+            y: 0
+          }} transition={{
+            duration: 0.8
+          }} className="space-y-8">
               <div className="space-y-4">
                 <Badge variant="glow" className="px-4 py-1.5">
                   <Sparkles className="w-3 h-3 mr-2" />
@@ -119,39 +111,47 @@ export default function Index() {
             </motion.div>
             
             {/* Right - 3D Earth */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1, delay: 0.3 }}
-              className="relative h-[500px] lg:h-[600px]"
-            >
-              <Suspense fallback={
-                <div className="absolute inset-0 flex items-center justify-center">
+            <motion.div initial={{
+            opacity: 0,
+            scale: 0.9
+          }} animate={{
+            opacity: 1,
+            scale: 1
+          }} transition={{
+            duration: 1,
+            delay: 0.3
+          }} className="relative h-[500px] lg:h-[600px]">
+              <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-20 h-20 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                </div>
-              }>
+                </div>}>
                 <Earth3D />
               </Suspense>
               
               {/* Floating stats */}
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1 }}
-                className="absolute top-10 -left-4 glass-panel px-4 py-3 rounded-lg"
-              >
-                <p className="text-xs text-muted-foreground">Active Satellites</p>
+              <motion.div initial={{
+              opacity: 0,
+              x: -20
+            }} animate={{
+              opacity: 1,
+              x: 0
+            }} transition={{
+              delay: 1
+            }} className="absolute top-10 -left-4 glass-panel px-4 py-3 rounded-lg">
+                <p className="text-xs text-muted-foreground">actively tracking satellites</p>
                 <p className="text-2xl font-display font-bold text-success">4,532</p>
               </motion.div>
               
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1.2 }}
-                className="absolute bottom-20 -right-4 glass-panel px-4 py-3 rounded-lg"
-              >
-                <p className="text-xs text-muted-foreground">Debris Tracked</p>
-                <p className="text-2xl font-display font-bold text-warning">23,847</p>
+              <motion.div initial={{
+              opacity: 0,
+              x: 20
+            }} animate={{
+              opacity: 1,
+              x: 0
+            }} transition={{
+              delay: 1.2
+            }} className="absolute bottom-20 -right-4 glass-panel px-4 py-3 rounded-lg">
+                <p className="text-xs text-muted-foreground">collisions predicted </p>
+                <p className="text-2xl font-display font-bold text-warning">​60+ </p>
               </motion.div>
             </motion.div>
           </div>
@@ -169,21 +169,22 @@ export default function Index() {
       <section className="py-20 relative">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
+            {stats.map((stat, index) => <motion.div key={stat.label} initial={{
+            opacity: 0,
+            y: 20
+          }} whileInView={{
+            opacity: 1,
+            y: 0
+          }} transition={{
+            delay: index * 0.1
+          }} viewport={{
+            once: true
+          }} className="text-center">
                 <p className="text-4xl md:text-5xl font-display font-bold text-primary text-glow">
                   {stat.value}
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">{stat.label}</p>
-              </motion.div>
-            ))}
+              </motion.div>)}
           </div>
         </div>
       </section>
@@ -193,12 +194,15 @@ export default function Index() {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-secondary/30 to-transparent" />
         
         <div className="container mx-auto px-4 relative z-10">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
+          <motion.div initial={{
+          opacity: 0,
+          y: 20
+        }} whileInView={{
+          opacity: 1,
+          y: 0
+        }} viewport={{
+          once: true
+        }} className="text-center mb-16">
             <Badge variant="orbital" className="mb-4">Features</Badge>
             <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
               Mission Control for
@@ -212,15 +216,18 @@ export default function Index() {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <motion.div
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                >
+            const Icon = feature.icon;
+            return <motion.div key={feature.title} initial={{
+              opacity: 0,
+              y: 20
+            }} whileInView={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              delay: index * 0.1
+            }} viewport={{
+              once: true
+            }}>
                   <Card variant="glass" className="h-full hover:border-primary/50 transition-all duration-300 group">
                     <CardContent className="p-6 space-y-4">
                       <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
@@ -230,9 +237,8 @@ export default function Index() {
                       <p className="text-sm text-muted-foreground">{feature.description}</p>
                     </CardContent>
                   </Card>
-                </motion.div>
-              );
-            })}
+                </motion.div>;
+          })}
           </div>
         </div>
       </section>
@@ -282,6 +288,5 @@ export default function Index() {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 }
