@@ -64,7 +64,7 @@ export default function Index() {
               <div className="space-y-4">
                 <Badge variant="glow" className="px-4 py-1.5">
                   <Sparkles className="w-3 h-3 mr-2" />
-                  Now in Beta
+                  Student Hackpad 2026
                 </Badge>
                 
                 <h1 className="text-5xl md:text-7xl font-display font-bold leading-tight">
