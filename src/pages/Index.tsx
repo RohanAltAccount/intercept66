@@ -18,7 +18,7 @@ const features = [{
 }, {
   icon: Satellite,
   title: "Asset Management",
-  description: "Track satellite parts, plan missions, and organize logistics for your entire constellation."
+  description: "Track real satellites, find collision points, and organize your astronomical ideas."
 }, {
   icon: Shield,
   title: "Collision Prevention",
