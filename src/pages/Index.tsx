@@ -34,7 +34,7 @@ const stats = [{
   value: "< 6s",
   label: "Alert Response Time"
 }, {
-  value: "66",
+  value: "163",
   label: "Satellites Supported"
 }];
 export default function Index() {
