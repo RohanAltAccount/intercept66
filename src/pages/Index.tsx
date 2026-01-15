@@ -14,7 +14,7 @@ const features = [{
 }, {
   icon: Target,
   title: "Debris Tracker",
-  description: "Real-time space debris data with predictive collision alerts and automated avoidance recommendations."
+  description: "Live space object data with automated avoidance maneuver recommendations."
 }, {
   icon: Satellite,
   title: "Asset Management",
