@@ -25,7 +25,7 @@ const features = [{
   description: "Mathematical algorithm predicts orbital intersections and provides early warnings for future intercepts."
 }];
 const stats = [{
-  value: "23,000+",
+  value: "100+",
   label: "Debris Objects Tracked"
 }, {
   value: "99.9%",
