@@ -31,7 +31,7 @@ const stats = [{
   value: "80%",
   label: "Prediction Accuracy"
 }, {
-  value: "< 1s",
+  value: "< 6s",
   label: "Alert Response Time"
 }, {
   value: "66",
