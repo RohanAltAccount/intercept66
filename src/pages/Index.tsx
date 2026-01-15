@@ -22,7 +22,7 @@ const features = [{
 }, {
   icon: Shield,
   title: "Collision Prevention",
-  description: "Advanced algorithms predict intersections and provide early warning for potential threats."
+  description: "Mathematical algorithm predicts orbital intersections and provides early warnings for future intercepts."
 }];
 const stats = [{
   value: "23,000+",
