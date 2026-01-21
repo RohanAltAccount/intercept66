@@ -260,7 +260,7 @@ export default function Index() {
               <div className="flex flex-wrap justify-center gap-4">
                 <Link to="/auth?mode=signup">
                   <Button variant="hero" size="xl">
-                    Start Free Trial
+                    join now
                   </Button>
                 </Link>
                 <Button variant="glass" size="xl">
