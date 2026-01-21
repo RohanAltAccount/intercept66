@@ -263,9 +263,11 @@ export default function Index() {
                     join now
                   </Button>
                 </Link>
-                <Button variant="glass" size="xl">
-                  Schedule Demo
-                </Button>
+                <a href="mailto:contactrva.business@gmail.com">
+                  <Button variant="glass" size="xl">
+                    contact us
+                  </Button>
+                </a>
               </div>
             </CardContent>
           </Card>
