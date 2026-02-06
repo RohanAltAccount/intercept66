@@ -310,8 +310,17 @@ export default function Auth() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {!isSignUp && (
+                  <div className="text-right">
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                )}
               </div>
-              
               <Button type="submit" variant="hero" className="w-full" size="lg" disabled={isLoading}>
                 {isLoading ? (
                   <>
