@@ -1,1 +1,1 @@
-
+This was my second Lovable project, and I used it because they announced some kind of update. I wanted to test it out, and this seemed like a pretty cool project concept. So, I drafted the idea, the brand kit, and logos, and fed it all to Lovable. I have to say, I'm pretty impressed.
